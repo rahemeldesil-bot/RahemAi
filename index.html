@@ -1,69 +1,55 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>رحيم AI - شغال بذكاء حقيقي</title>
+<title>رحيم AI</title>
 <style>
-body{background:#121212;color:white;font-family:Arial;padding:20px;text-align:center;margin:0}
+body{background:#121212;color:white;font-family:Arial;padding:20px;text-align:center}
 input{width:90%;max-width:500px;padding:15px;border-radius:10px;border:none;margin:15px 0;font-size:16px}
 button{background:#3b82f6;color:white;border:none;padding:15px 25px;border-radius:30px;font-size:18px;width:90%;max-width:500px;cursor:pointer;margin:5px 0}
 #chat{margin:20px auto;max-width:600px;text-align:right}
 .msg{background:#2a2a2a;padding:12px;border-radius:10px;margin:10px 0}
-.error{background:#5a1a1a !important}
 </style>
 </head>
 <body>
 <h2>🤖 رحيم AI - شغال بذكاء حقيقي</h2>
 <div id="setup">
-<p>أول مرة؟ حط مفتاح Gemini بتاعك هنا:</p>
 <input id="keyInput" placeholder="الصق المفتاح هنا">
-<br>
-<button onclick="saveKey()">حفظ المفتاح وتشغيل الذكاء</button>
+<br><button onclick="saveKey()">حفظ المفتاح وتشغيل الذكاء</button>
 </div>
 <div id="chatArea" style="display:none">
 <div id="chat"></div>
 <input id="userInput" placeholder="اسأل أي حاجة...">
 <button onclick="ask()">إرسال</button>
-<br><br>
-<button onclick="clearKey()" style="background:#555;font-size:14px;width:200px">مسح المفتاح</button>
+<br><br><button onclick="clearKey()" style="background:#555;font-size:14px;width:200px">مسح المفتاح</button>
 </div>
 <script>
 let apiKey = localStorage.getItem('gemini_key');
-if(apiKey){
- document.getElementById('setup').style.display='none';
- document.getElementById('chatArea').style.display='block';
-}
-function saveKey(){
- let k = document.getElementById('keyInput').value.trim();
- if(k.length < 10){alert('المفتاح قصير');return}
- localStorage.setItem('gemini_key', k);
- location.reload();
-}
+if(apiKey){ document.getElementById('setup').style.display='none'; document.getElementById('chatArea').style.display='block'; }
+function saveKey(){ let k=document.getElementById('keyInput').value.trim(); if(k.length<10){alert('مفتاح غلط');return} localStorage.setItem('gemini_key',k); location.reload(); }
 function clearKey(){ localStorage.removeItem('gemini_key'); location.reload(); }
 async function ask(){
- let q = document.getElementById('userInput').value.trim();
- if(!q) return;
- let chatDiv = document.getElementById('chat');
- chatDiv.innerHTML += `<div class="msg"><b>انت:</b> ${q}</div>`;
+ let q=document.getElementById('userInput').value.trim(); if(!q) return;
+ let chatDiv=document.getElementById('chat');
+ chatDiv.innerHTML+=`<div class="msg"><b>انت:</b> ${q}</div>`;
  document.getElementById('userInput').value='';
- chatDiv.innerHTML += `<div class="msg" id="loading">جاري التفكير...</div>`;
- try{
-  let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${localStorage.getItem('gemini_key')}`,{
-   method:'POST',
-   headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({contents:[{parts:[{text:q}]}]})
-  });
-  let data = await res.json();
-  document.getElementById('loading')?.remove();
-  if(data.error){ chatDiv.innerHTML += `<div class="msg error">خطأ: ${data.error.message}</div>`; return; }
-  let ans = data.candidates[0].content.parts[0].text;
-  chatDiv.innerHTML += `<div class="msg"><b>رحيم:</b> ${ans}</div>`;
- }catch(e){
-  document.getElementById('loading')?.remove();
-  chatDiv.innerHTML += `<div class="msg error">النت ضعيف او المفتاح غلط</div>`;
+ chatDiv.innerHTML+=`<div class="msg" id="loading">جاري التفكير...</div>`;
+ let models=["gemini-2.0-flash-lite","gemini-1.5-flash-8b","gemini-1.5-flash","gemini-3.8-flash"];
+ let key=localStorage.getItem('gemini_key');
+ for(let m of models){
+  try{
+   let r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:q}]}]})});
+   let d=await r.json();
+   if(d.error){ console.log(m, d.error.message); if(d.error.message.includes("demand")||d.error.message.includes("not found")||d.error.message.includes("longer available")) continue; else throw new Error(d.error.message); }
+   document.getElementById('loading')?.remove();
+   let ans=d.candidates[0].content.parts[0].text;
+   chatDiv.innerHTML+=`<div class="msg"><b>رحيم:</b> ${ans}</div>`;
+   return;
+  }catch(e){ continue; }
  }
+ document.getElementById('loading')?.remove();
+ chatDiv.innerHTML+=`<div class="msg">جوجل مضغوطة حاليا، استنى 30 ثانية ودوس ارسال تاني</div>`;
 }
 </script>
 </body>
